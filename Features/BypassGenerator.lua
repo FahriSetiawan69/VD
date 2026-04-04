@@ -1,14 +1,17 @@
--- [[ FahriRoundopHUB - Bypass Generator Engine ]] --
+-- [[ FahriRoundopHUB - Bypass Generator V7.6 (Anti-Stuck Edition) ]] --
+-- Fitur Unggulan: Instant Analog Cancel & Multi-Point Sync
+
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Survivor = {
     Active = false,
-    RepairRemote = ReplicatedStorage.Remotes.Generator.RepairEvent
+    RepairRemote = ReplicatedStorage.Remotes.Generator.RepairEvent,
+    LastTarget = nil -- Menyimpan titik terakhir untuk memastikan sinyal 'false' terkirim tepat sasaran
 }
 
--- Fungsi Smart Scanner (Mencari GeneratorPoint terdekat)
+-- [[ SCANNER TITIK REPAIR ]] --
 local function getBestInteractionPoint()
     local Character = Player.Character
     if not Character or not Character:FindFirstChild("HumanoidRootPart") then return nil end
@@ -29,8 +32,7 @@ local function getBestInteractionPoint()
     return closestPoint
 end
 
--- METATABLE HOOK (Logic Bypass V6)
--- Hook ini dipasang sekali, tapi aksinya hanya jalan jika Survivor.Active = true
+-- [[ METATABLE HOOK: BYPASS & SAFETY CHECK ]] --
 local oldNamecall
 oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
     local method = getnamecallmethod()
@@ -40,41 +42,58 @@ oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
         local Character = Player.Character
         local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
         
-        -- Jika karakter diam (tidak bergerak), lakukan bypass
-        if Humanoid and Humanoid.MoveDirection.Magnitude == 0 then
-            if args[2] == false then
-                args[2] = true -- Ubah Gagal jadi Berhasil
-                return oldNamecall(self, unpack(args))
-            end
+        -- JIKA SEDANG GERAK: Jangan biarkan bypass merubah apapun (biarkan sinyal cancel lewat murni)
+        if Humanoid and Humanoid.MoveDirection.Magnitude > 0 then
+            return oldNamecall(self, unpack(args))
+        end
+
+        -- JIKA DIAM: Lakukan bypass skill check
+        if args[2] == false then
+            args[2] = true
+            return oldNamecall(self, unpack(args))
         end
     end
     return oldNamecall(self, ...)
 end)
 
--- SPAM LOOP WITH AUTO-ATTACH
+-- [[ LOOP UTAMA: AUTO-ATTACH & INSTANT DETACH ]] --
 task.spawn(function()
     while true do
-        task.wait(0.4)
+        task.wait(0.2) -- Delay dipercepat (dari 0.4 ke 0.2) agar deteksi analog lebih responsif
+        
         if Survivor.Active then
             local Character = Player.Character
             local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
+            
             if Humanoid then
-                local target = getBestInteractionPoint()
+                local currentTarget = getBestInteractionPoint()
+                
+                -- LOGIKA 1: JIKA ANALOG DIAM (REPAIR JALAN)
                 if Humanoid.MoveDirection.Magnitude == 0 then
-                    if target then Survivor.RepairRemote:FireServer(target, true) end
+                    if currentTarget then
+                        Survivor.LastTarget = currentTarget
+                        Survivor.RepairRemote:FireServer(currentTarget, true)
+                    end
+                
+                -- LOGIKA 2: JIKA ANALOG BERGERAK (INSTANT CANCEL)
                 elseif Humanoid.MoveDirection.Magnitude > 0 then
-                    if target then Survivor.RepairRemote:FireServer(target, false) end
-                    task.wait(0.3)
+                    -- Kirim sinyal False ke target terakhir agar karakter langsung lepas/berdiri
+                    if Survivor.LastTarget then
+                        Survivor.RepairRemote:FireServer(Survivor.LastTarget, false)
+                        Survivor.LastTarget = nil -- Reset target setelah lepas
+                    end
+                    -- Beri jeda sedikit agar tidak langsung nempel lagi saat sedang lari
+                    task.wait(0.5) 
                 end
             end
         end
     end
 end)
 
--- Fungsi Control untuk UI
 function Survivor:Toggle(state)
     self.Active = state
-    print("[FahriRoundopHUB] Bypass Generator: " .. tostring(state))
+    if not state then Survivor.LastTarget = nil end
+    print("[FahriRoundopHUB] Bypass Generator: " .. (state and "ON" or "OFF"))
 end
 
 _G.FahriSurvivor = Survivor
