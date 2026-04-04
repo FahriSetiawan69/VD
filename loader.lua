@@ -1,51 +1,26 @@
--- [[ RiiHUB OFFICIAL LOADER + DECORATION ]] --
--- Developer: FahriSetiawan69
-
+-- [[ RiiHUB OFFICIAL LOADER - FIXED ]] --
 local BaseURL = "https://raw.githubusercontent.com/FahriSetiawan69/VD/main/"
 local StarterGui = game:GetService("StarterGui")
 
--- 1. HIASAN POP-UP (Akan muncul segera setelah execute)
+-- 1. Pop-up Hiasan
 StarterGui:SetCore("SendNotification", {
-    Title = "RiiHUB System",
-    Text = "FahriRoundopHUB Execute", -- Teks sesuai permintaanmu
-    Duration = 5, -- Muncul selama 5 detik
-    Icon = "rbxassetid://4483345998" -- Ikon hiasan (bisa diganti ID lain)
+    Title = "System Run",
+    Text = "FahriRoundopHUB Execute",
+    Duration = 5,
+    Icon = "rbxassetid://4483345998"
 })
 
-print("------------------------------------------")
-print("[RiiHUB] FahriRoundopHUB Execute...")
-print("[RiiHUB] Menghubungkan ke GitHub...")
-
--- 2. LOGIKA LOADING HOMEGUI
+-- 2. Logika Loading
 local function StartRiiHUB()
-    local success, scriptContent = pcall(function()
+    local success, content = pcall(function()
         return game:HttpGet(BaseURL .. "HomeGui.lua")
     end)
 
-    if success and scriptContent then
-        local execute, err = loadstring(scriptContent)
-        if execute then
-            -- Notifikasi kedua (opsional) saat berhasil terhubung
-            StarterGui:SetCore("SendNotification", {
-                Title = "Connection Success",
-                Text = "Memuat Menu Utama...",
-                Duration = 3
-            })
-            execute()
-        else
-            warn("[RiiHUB] Error dalam script HomeGui: " .. tostring(err))
-        end
+    if success and content then
+        loadstring(content)()
     else
-        warn("[RiiHUB] Gagal mengambil data. Pastikan Repo Public!")
-        
-        StarterGui:SetCore("SendNotification", {
-            Title = "Loader Error",
-            Text = "Gagal memuat file dari GitHub.",
-            Duration = 5
-        })
+        warn("[RiiHUB] Gagal mengambil HomeGui.lua! Cek link GitHub kamu.")
     end
 end
 
--- Jalankan proses
 task.spawn(StartRiiHUB)
-print("------------------------------------------")
