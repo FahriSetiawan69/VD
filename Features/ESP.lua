@@ -1,4 +1,4 @@
--- [[ FahriRoundopHUB - ESP Engine (Final Config) ]] --
+-- [[ FahriRoundopHUB - ESP Engine (Ultimate Fix) ]] --
 -- Developer: FahriSetiawan69
 
 local ESP = {
@@ -12,34 +12,38 @@ local ESP = {
     }
 }
 
--- Fungsi Helper untuk membuat Highlight
+-- [[ FUNGSI HELPER HIGHLIGHT - FIX VISUAL & DEPTH ]] --
 local function ApplyHighlight(obj, color)
     if not obj then return end
+    
     local hl = obj:FindFirstChild("FR_ESP") or Instance.new("Highlight")
     hl.Name = "FR_ESP"
     hl.Parent = obj
+    
+    -- Fix Masalah 2: Outline tipis & transparan agar tidak silau
     hl.FillColor = color
-    hl.OutlineColor = Color3.fromRGB(255, 255, 255) -- Outline Putih agar kontras
+    hl.OutlineColor = Color3.fromRGB(200, 200, 200) -- Abu-abu terang agar tidak se-tebal Putih murni
     hl.FillTransparency = 0.5
-    hl.OutlineTransparency = 0
+    hl.OutlineTransparency = 0.6 -- Outline dibuat samar agar lebih jelas melihat objeknya
+    
+    -- Fix Masalah 3: TEMBUS TEMBOK (Always On Top)
+    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    
     hl.Enabled = true
     return hl
 end
 
--- 1. LOGIKA PLAYER ESP (KILLER & SURVIVOR)
+-- 1. PLAYER ESP (KILLER & SURVIVOR)
 function ESP:SetPlayer(state)
     self.Config.Player = state
     local function UpdatePlayer(p)
         if p.Character then
-            local color = Color3.fromRGB(255, 255, 255) -- Default Putih jika tim tidak ketemu
-            
-            -- Deteksi Tim
+            local color = Color3.fromRGB(255, 255, 255)
             if p.Team and p.Team.Name == "Killer" then
                 color = self.Colors.Killer
             elseif p.Team and p.Team.Name == "Survivor" then
                 color = self.Colors.Survivor
             end
-            
             local hl = ApplyHighlight(p.Character, color)
             if hl then hl.Enabled = state end
         end
@@ -52,45 +56,45 @@ function ESP:SetPlayer(state)
     end
 end
 
--- 2. LOGIKA GENERATOR ESP (ORANYE)
+-- 2. GENERATOR ESP
 function ESP:SetGenerator(state)
     self.Config.Generator = state
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj.Name == "Generator" or obj:FindFirstChild("Generator") then
+        -- Mencari kata "Generator" baik di nama atau di dalam model
+        if obj.Name:find("Generator") then
             local hl = ApplyHighlight(obj, self.Colors.Generator)
             if hl then hl.Enabled = state end
         end
     end
 end
 
--- 3. LOGIKA PALLET ESP (KUNING)
+-- 3. PALLET ESP
 function ESP:SetPallet(state)
     self.Config.Pallet = state
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj.Name:find("Pallet") then
+        if obj.Name:lower():find("pallet") then
             local hl = ApplyHighlight(obj, self.Colors.Pallet)
             if hl then hl.Enabled = state end
         end
     end
 end
 
--- 4. LOGIKA GATE ESP (BIRU)
+-- 4. GATE ESP - FIX (Kembali ke logika script sebelumnya yang bekerja)
 function ESP:SetGate(state)
     self.Config.Gate = state
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj.Name:find("ExitGate") or obj.Name:find("Gate") then
+        -- Kita pakai pencarian yang lebih luas sesuai script awalmu yang sempat work
+        if obj.Name:find("Gate") or obj.Name:find("Exit") or obj.Name == "ExitGate" then
             local hl = ApplyHighlight(obj, self.Colors.Gate)
             if hl then hl.Enabled = state end
         end
     end
 end
 
--- 5. CLEANUP SYSTEM
+-- 5. CLEANUP
 function ESP:DestroyAll()
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:FindFirstChild("FR_ESP") then 
-            obj.FR_ESP:Destroy() 
-        end
+        if obj:FindFirstChild("FR_ESP") then obj.FR_ESP:Destroy() end
     end
     for _, p in pairs(game:GetService("Players"):GetPlayers()) do
         if p.Character and p.Character:FindFirstChild("FR_ESP") then
@@ -99,7 +103,5 @@ function ESP:DestroyAll()
     end
 end
 
--- Simpan ke Global agar bisa dikontrol oleh HomeGui.lua
 _G.FahriESP = ESP
-print("[FahriRoundopHUB] ESP Engine Configured with Team Logic!")
 return ESP
