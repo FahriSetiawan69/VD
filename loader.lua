@@ -1,5 +1,5 @@
 -- [[ FahriRoundopHUB OFFICIAL LOADER ]] --
-local BaseURL = "https://raw.githubusercontent.com/FahriSetiawan69/VD/refs/heads/main/"
+local BaseURL = "https://raw.githubusercontent.com/FahriSetiawan69/VD/main/"
 local StarterGui = game:GetService("StarterGui")
 
 StarterGui:SetCore("SendNotification", {
@@ -17,12 +17,13 @@ local function StartHub()
     if success and content then
         local func, err = loadstring(content)
         if func then
+            print("[FR-HUB] HomeGui Terdeteksi! Menjalankan...")
             func()
         else
-            warn("[FR-HUB] Error compile: " .. tostring(err))
+            warn("[FR-HUB] Error di dalam file HomeGui: " .. tostring(err))
         end
     else
-        warn("[FR-HUB] 404: Gagal download HomeGui.lua")
+        warn("[FR-HUB] 404: Gagal mendownload HomeGui.lua")
     end
 end
 
