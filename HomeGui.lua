@@ -41,40 +41,51 @@ Window.Minimize = function(self)
 end
 ToggleButton.MouseButton1Click:Connect(function() Window:Minimize() end)
 
--- 4. LOAD BRAIN (ESP.lua)
-local function GetESP()
-    if _G.FahriESP == nil then
-        loadstring(game:HttpGet(BaseURL .. "Features/ESP.lua"))()
-    end
+-- 4. HELPER: LOAD FEATURES
+local function InitESP()
+    if _G.FahriESP == nil then loadstring(game:HttpGet(BaseURL .. "Features/ESP.lua"))() end
     return _G.FahriESP
 end
 
--- 5. TABS
-local Tabs = { Visuals = Window:AddTab({ Title = "Visuals", Icon = "view" }) }
+local function InitSurvivor()
+    if _G.FahriSurvivor == nil then loadstring(game:HttpGet(BaseURL .. "Features/BypassGenerator.lua"))() end
+    return _G.FahriSurvivor
+end
 
--- 6. TOGGLES (Sinkron dengan Logika Prototipe)
+-- 5. TABS SETUP
+local Tabs = { 
+    Visuals = Window:AddTab({ Title = "Visuals", Icon = "view" }),
+    Survivor = Window:AddTab({ Title = "Survivor", Icon = "user" }),
+    Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
+}
+
+-- 6. VISUALS TOGGLES
 Tabs.Visuals:AddToggle("P_ESP", {Title = "Player ESP", Default = false}):OnChanged(function(v)
-    local ESP = GetESP() if ESP then ESP:SetPlayer(v) end
+    local ESP = InitESP() if ESP then ESP:SetPlayer(v) end
 end)
-
 Tabs.Visuals:AddToggle("G_ESP", {Title = "Generator ESP", Default = false}):OnChanged(function(v)
-    local ESP = GetESP() if ESP then ESP:SetGenerator(v) end
+    local ESP = InitESP() if ESP then ESP:SetGenerator(v) end
 end)
-
 Tabs.Visuals:AddToggle("Pal_ESP", {Title = "Pallet ESP", Default = false}):OnChanged(function(v)
-    local ESP = GetESP() if ESP then ESP:SetPallet(v) end
+    local ESP = InitESP() if ESP then ESP:SetPallet(v) end
 end)
-
 Tabs.Visuals:AddToggle("Gate_ESP", {Title = "Gate ESP", Default = false}):OnChanged(function(v)
-    local ESP = GetESP() if ESP then ESP:SetGate(v) end
+    local ESP = InitESP() if ESP then ESP:SetGate(v) end
 end)
 
--- 7. CLEANUP
+-- 7. SURVIVOR TOGGLES
+Tabs.Survivor:AddToggle("BypassGen", {Title = "Bypass Generator Check", Default = false}):OnChanged(function(v)
+    local Surv = InitSurvivor() if Surv then Surv:Toggle(v) end
+end)
+
+-- 8. CLEANUP
 CoreGui.ChildRemoved:Connect(function(child)
     if child.Name == "Fluent" then
         ScreenGui:Destroy()
         if _G.FahriESP then _G.FahriESP:DestroyAll() end
+        if _G.FahriSurvivor then _G.FahriSurvivor:Toggle(false) end
         _G.FahriESP = nil
+        _G.FahriSurvivor = nil
     end
 end)
 
