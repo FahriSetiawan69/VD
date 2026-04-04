@@ -1,10 +1,39 @@
--- [[ FahriRoundopHUB - Fluent Mobile Edition ]] --
+-- [[ FahriRoundopHUB - Fluent Pro Mobile Final ]] --
 -- Developer: FahriSetiawan69
+
+-- 1. ANTI-DUPLICATE (Hapus UI lama jika re-execute)
+if game:GetService("CoreGui"):FindFirstChild("FR_MobileToggle") then
+    game:GetService("CoreGui").FR_MobileToggle:Destroy()
+end
+if game:GetService("CoreGui"):FindFirstChild("Fluent") then
+    game:GetService("CoreGui").Fluent:Destroy()
+end
 
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 local BaseURL = "https://raw.githubusercontent.com/FahriSetiawan69/VD/refs/heads/main/"
 
--- 1. WINDOW SETUP
+-- 2. FLOATING BUTTON SETUP (Awalnya Sembunyi)
+local ScreenGui = Instance.new("ScreenGui")
+local ToggleButton = Instance.new("ImageButton")
+local UICorner = Instance.new("UICorner")
+
+ScreenGui.Name = "FR_MobileToggle"
+ScreenGui.Parent = game:GetService("CoreGui")
+ScreenGui.Enabled = false -- Sembunyi saat menu sedang terbuka
+
+ToggleButton.Name = "ToggleButton"
+ToggleButton.Parent = ScreenGui
+ToggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+ToggleButton.BackgroundTransparency = 0.2
+ToggleButton.Position = UDim2.new(0.05, 0, 0.4, 0)
+ToggleButton.Size = UDim2.new(0, 50, 0, 50)
+ToggleButton.Image = "rbxassetid://4483345998"
+ToggleButton.Draggable = true 
+
+UICorner.CornerRadius = UDim.new(0, 12)
+UICorner.Parent = ToggleButton
+
+-- 3. WINDOW SETUP
 local Window = Fluent:CreateWindow({
     Title = "FahriRoundopHUB",
     SubTitle = "Violence District | Mobile",
@@ -15,43 +44,26 @@ local Window = Fluent:CreateWindow({
     MinimizeKey = Enum.KeyCode.LeftControl
 })
 
--- 2. FLOATING BUTTON SYSTEM (MOBILE TOGGLE)
-local ScreenGui = Instance.new("ScreenGui")
-local ToggleButton = Instance.new("ImageButton")
-local UICorner = Instance.new("UICorner")
+-- FUNGSI UNTUK TUKAR TAMPILAN (Toggle)
+local function ToggleMenu()
+    Window:Minimize() -- Minimize/Maximize menu Fluent
+    ScreenGui.Enabled = not ScreenGui.Enabled -- Tukar status tombol melayang
+end
 
-ScreenGui.Name = "FR_MobileToggle"
-ScreenGui.Parent = game:GetService("CoreGui")
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+-- Klik tombol melayang untuk buka menu
+ToggleButton.MouseButton1Click:Connect(ToggleMenu)
 
-ToggleButton.Name = "ToggleButton"
-ToggleButton.Parent = ScreenGui
-ToggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-ToggleButton.BackgroundTransparency = 0.2
-ToggleButton.Position = UDim2.new(0.1, 0, 0.4, 0)
-ToggleButton.Size = UDim2.new(0, 48, 0, 48)
-ToggleButton.Image = "rbxassetid://4483345998"
-ToggleButton.Draggable = true 
-
-UICorner.CornerRadius = UDim.new(0, 12)
-UICorner.Parent = ToggleButton
-
-ToggleButton.MouseButton1Click:Connect(function()
-    Window:Minimize()
-end)
-
--- 3. TABS SETUP
+-- 4. TABS SETUP
 local Tabs = {
     Visuals = Window:AddTab({ Title = "Visuals", Icon = "view" }),
     Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
 }
 
--- 4. FEATURES: PLAYER ESP
+-- 5. FEATURES: PLAYER ESP
 local ESPToggle = Tabs.Visuals:AddToggle("ESPToggle", {Title = "Player ESP (Highlight)", Default = false })
 
 ESPToggle:OnChanged(function()
     _G.ESP_Enabled = ESPToggle.Value
-    
     if _G.ESP_Loaded == nil then
         _G.ESP_Loaded = true
         Fluent:Notify({
@@ -63,26 +75,34 @@ ESPToggle:OnChanged(function()
     end
 end)
 
--- 5. AUTOMATIC CLEANUP (Saat Tombol X Bawaan Diklik)
--- Ini memastikan Tombol Melayang hilang saat UI ditutup total
+-- 6. SETTINGS: MINIMIZE & INFO
+Tabs.Settings:AddButton({
+    Title = "Minimize Menu",
+    Description = "Sembunyikan menu dan munculkan tombol melayang",
+    Callback = function()
+        ToggleMenu() -- Panggil fungsi tukar tampilan
+    end
+})
+
+Tabs.Settings:AddParagraph({
+    Title = "FahriRoundopHUB Info",
+    Content = "Gunakan tombol melayang di kiri untuk membuka kembali menu."
+})
+
+-- 7. CLEANUP SAAT TOMBOL CLOSE (X) DIKLIK
+-- Karena Fluent punya pop-up konfirmasi, kita deteksi saat UI benar-benar dihapus
 game:GetService("CoreGui").ChildRemoved:Connect(function(child)
     if child.Name == "Fluent" or child:FindFirstChild("Main") then
-        ScreenGui:Destroy()
+        ScreenGui:Destroy() -- Hapus tombol melayang selamanya
         _G.ESP_Enabled = false
         _G.ESP_Loaded = nil
     end
 end)
 
--- Tab Settings sekarang bisa kamu isi info atau fitur lain nanti
-Tabs.Settings:AddParagraph({
-    Title = "FahriRoundopHUB Info",
-    Content = "Version: 1.0\nStatus: Active\nGame: Violence District"
-})
-
 Window:SelectTab(1)
 
 Fluent:Notify({
     Title = "FahriRoundopHUB",
-    Content = "Berhasil Dimuat!",
+    Content = "Script Ready! Gunakan Tab Settings untuk Minimize.",
     Duration = 5
 })
