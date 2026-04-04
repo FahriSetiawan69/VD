@@ -1,34 +1,27 @@
--- [[ FahriRoundopHUB - Fluent Ultra Optimized ]] --
--- Developer: FahriSetiawan69
-
+-- [[ FahriRoundopHUB - Home UI ]] --
 local CoreGui = game:GetService("CoreGui")
+local BaseURL = "https://raw.githubusercontent.com/FahriSetiawan69/VD/refs/heads/main/"
 
 -- 1. ANTI-DUPLICATE
 if CoreGui:FindFirstChild("FR_MobileToggle") then CoreGui.FR_MobileToggle:Destroy() end
 if CoreGui:FindFirstChild("Fluent") then CoreGui.Fluent:Destroy() end
 
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-local BaseURL = "https://raw.githubusercontent.com/FahriSetiawan69/VD/refs/heads/main/"
 
--- 2. FLOATING BUTTON SETUP
+-- 2. FLOATING BUTTON
 local ScreenGui = Instance.new("ScreenGui")
 local ToggleButton = Instance.new("ImageButton")
 local UICorner = Instance.new("UICorner")
-
 ScreenGui.Name = "FR_MobileToggle"
 ScreenGui.Parent = CoreGui
-ScreenGui.DisplayOrder = 999
 ScreenGui.Enabled = false 
-
 ToggleButton.Name = "ToggleButton"
 ToggleButton.Parent = ScreenGui
 ToggleButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-ToggleButton.BackgroundTransparency = 0.1
-ToggleButton.Position = UDim2.new(0.02, 0, 0.45, 0)
 ToggleButton.Size = UDim2.new(0, 48, 0, 48)
+ToggleButton.Position = UDim2.new(0.02, 0, 0.45, 0)
 ToggleButton.Image = "rbxassetid://4483345998"
 ToggleButton.Draggable = true 
-
 UICorner.CornerRadius = UDim.new(0, 12)
 UICorner.Parent = ToggleButton
 
@@ -36,50 +29,52 @@ UICorner.Parent = ToggleButton
 local Window = Fluent:CreateWindow({
     Title = "FahriRoundopHUB",
     SubTitle = "Violence District",
-    TabWidth = 160,
-    Size = UDim2.fromOffset(450, 300),
-    Acrylic = true,
-    Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.LeftControl
+    TabWidth = 160, Size = UDim2.fromOffset(450, 300),
+    Acrylic = true, Theme = "Dark", MinimizeKey = Enum.KeyCode.LeftControl
 })
 
--- [[ PRO TIPS: MENGGUNAKAN HOOKING (TANPA LOOP) ]] --
--- Kita membajak fungsi Minimize bawaan agar tombol melayang sinkron otomatis
+-- HOOK MINIMIZE
 local OriginalMinimize = Window.Minimize
 Window.Minimize = function(self)
-    OriginalMinimize(self) -- Jalankan fungsi asli Fluent
-    -- Sinkronkan status tombol melayang dengan status Minimize window
+    OriginalMinimize(self)
     ScreenGui.Enabled = Window.Minimized 
 end
+ToggleButton.MouseButton1Click:Connect(function() Window:Minimize() end)
 
--- Klik tombol melayang untuk memunculkan kembali
-ToggleButton.MouseButton1Click:Connect(function()
-    Window:Minimize()
-end)
-
--- 4. TABS SETUP
-local Tabs = {
-    Visuals = Window:AddTab({ Title = "Visuals", Icon = "view" }),
-    Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
-}
-
--- 5. FEATURES: PLAYER ESP
-local ESPToggle = Tabs.Visuals:AddToggle("ESPToggle", {Title = "Player ESP (Highlight)", Default = false })
-
-ESPToggle:OnChanged(function()
-    _G.ESP_Enabled = ESPToggle.Value
-    if _G.ESP_Loaded == nil then
-        _G.ESP_Loaded = true
+-- 4. LOAD BRAIN (ESP.lua)
+local function GetESP()
+    if _G.FahriESP == nil then
         loadstring(game:HttpGet(BaseURL .. "Features/ESP.lua"))()
     end
+    return _G.FahriESP
+end
+
+-- 5. TABS
+local Tabs = { Visuals = Window:AddTab({ Title = "Visuals", Icon = "view" }) }
+
+-- 6. TOGGLES (Sinkron dengan Logika Prototipe)
+Tabs.Visuals:AddToggle("P_ESP", {Title = "Player ESP", Default = false}):OnChanged(function(v)
+    local ESP = GetESP() if ESP then ESP:SetPlayer(v) end
 end)
 
--- 6. CLEANUP
+Tabs.Visuals:AddToggle("G_ESP", {Title = "Generator ESP", Default = false}):OnChanged(function(v)
+    local ESP = GetESP() if ESP then ESP:SetGenerator(v) end
+end)
+
+Tabs.Visuals:AddToggle("Pal_ESP", {Title = "Pallet ESP", Default = false}):OnChanged(function(v)
+    local ESP = GetESP() if ESP then ESP:SetPallet(v) end
+end)
+
+Tabs.Visuals:AddToggle("Gate_ESP", {Title = "Gate ESP", Default = false}):OnChanged(function(v)
+    local ESP = GetESP() if ESP then ESP:SetGate(v) end
+end)
+
+-- 7. CLEANUP
 CoreGui.ChildRemoved:Connect(function(child)
     if child.Name == "Fluent" then
         ScreenGui:Destroy()
-        _G.ESP_Enabled = false
-        _G.ESP_Loaded = nil
+        if _G.FahriESP then _G.FahriESP:DestroyAll() end
+        _G.FahriESP = nil
     end
 end)
 
