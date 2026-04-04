@@ -1,58 +1,42 @@
--- [[ FahriRoundopHUB - ESP Engine (Precision Fix) ]] --
+-- [[ FahriRoundopHUB - ESP Engine (Pallet & Gate Fix) ]] --
 -- Developer: FahriSetiawan69
 
 local ESP = {
     Config = { Player = false, Generator = false, Pallet = false, Gate = false },
     Colors = {
-        Killer = Color3.fromRGB(255, 0, 0),      -- Merah
-        Survivor = Color3.fromRGB(0, 255, 0),    -- Hijau
-        Generator = Color3.fromRGB(255, 165, 0), -- Oranye
-        Pallet = Color3.fromRGB(255, 255, 0),    -- Kuning
-        Gate = Color3.fromRGB(0, 0, 255)         -- Biru
+        Killer = Color3.fromRGB(255, 0, 0),      
+        Survivor = Color3.fromRGB(0, 255, 0),    
+        Generator = Color3.fromRGB(255, 165, 0), 
+        Pallet = Color3.fromRGB(255, 255, 0),    
+        Gate = Color3.fromRGB(0, 0, 255)         
     }
 }
 
--- [[ FUNGSI HELPER HIGHLIGHT ]] --
 local function ApplyHighlight(obj, color)
     if not obj then return end
     local hl = obj:FindFirstChild("FR_ESP") or Instance.new("Highlight")
     hl.Name = "FR_ESP"
     hl.Parent = obj
-    
     hl.FillColor = color
     hl.OutlineColor = Color3.fromRGB(255, 255, 255)
     hl.FillTransparency = 0.5
     hl.OutlineTransparency = 0.8 
-    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop -- Tembus Tembok
+    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     hl.Enabled = true
     return hl
 end
 
--- 1. PLAYER ESP (KILLER & SURVIVOR)
+-- 1. PLAYER ESP
 function ESP:SetPlayer(state)
     self.Config.Player = state
-    local function UpdatePlayer(p)
-        if p.Character then
-            -- Default Hijau (Survivor)
-            local playerColor = self.Colors.Survivor 
-            
-            if p.Team then
-                local teamName = p.Team.Name
-                if teamName:find("Killer") then
-                    playerColor = self.Colors.Killer
-                elseif teamName:find("Survivor") then
-                    playerColor = self.Colors.Survivor
-                end
-            end
-            
-            local hl = ApplyHighlight(p.Character, playerColor)
-            if hl then hl.Enabled = state end
-        end
-    end
-
     for _, p in pairs(game:GetService("Players"):GetPlayers()) do
-        if p ~= game:GetService("Players").LocalPlayer then
-            UpdatePlayer(p)
+        if p ~= game:GetService("Players").LocalPlayer and p.Character then
+            local color = self.Colors.Survivor
+            if p.Team and p.Team.Name:find("Killer") then
+                color = self.Colors.Killer
+            end
+            local hl = ApplyHighlight(p.Character, color)
+            if hl then hl.Enabled = state end
         end
     end
 end
@@ -68,23 +52,24 @@ function ESP:SetGenerator(state)
     end
 end
 
--- 3. PALLET ESP (Hanya 1 Keyword Sesuai Request)
+-- 3. PALLET ESP (FIX: Kembali menggunakan :find agar akurat)
 function ESP:SetPallet(state)
     self.Config.Pallet = state
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj.Name == "Pallet" then
+        -- Kita gunakan :find agar "Pallet_01" atau "Pallets" tetap terdeteksi
+        if obj.Name:find("Pallet") then
             local hl = ApplyHighlight(obj, self.Colors.Pallet)
             if hl then hl.Enabled = state end
         end
     end
 end
 
--- 4. GATE ESP (FIX: Berdasarkan Hasil Scan Scanner Tool)
+-- 4. GATE ESP (FIX: Berdasarkan hasil Scanner Tool)
 function ESP:SetGate(state)
     self.Config.Gate = state
     for _, obj in pairs(workspace:GetDescendants()) do
-        -- Berdasarkan scan: Nama objek utama adalah "Gate"
-        if obj.Name == "Gate" then
+        -- Berdasarkan scan kamu: Nama Parent-nya adalah "Gate"
+        if obj.Name == "Gate" or obj.Name:find("ExitGate") then
             local hl = ApplyHighlight(obj, self.Colors.Gate)
             if hl then hl.Enabled = state end
         end
@@ -95,11 +80,6 @@ end
 function ESP:DestroyAll()
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:FindFirstChild("FR_ESP") then obj.FR_ESP:Destroy() end
-    end
-    for _, p in pairs(game:GetService("Players"):GetPlayers()) do
-        if p.Character and p.Character:FindFirstChild("FR_ESP") then
-            p.Character.FR_ESP:Destroy()
-        end
     end
 end
 
