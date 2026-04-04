@@ -1,4 +1,4 @@
--- [[ FahriRoundopHUB - ESP Engine (Ultimate Fix) ]] --
+-- [[ FahriRoundopHUB - ESP Engine (Refined Fix) ]] --
 -- Developer: FahriSetiawan69
 
 local ESP = {
@@ -12,23 +12,18 @@ local ESP = {
     }
 }
 
--- [[ FUNGSI HELPER HIGHLIGHT - FIX VISUAL & DEPTH ]] --
+-- [[ FUNGSI HELPER HIGHLIGHT ]] --
 local function ApplyHighlight(obj, color)
     if not obj then return end
-    
     local hl = obj:FindFirstChild("FR_ESP") or Instance.new("Highlight")
     hl.Name = "FR_ESP"
     hl.Parent = obj
     
-    -- Fix Masalah 2: Outline tipis & transparan agar tidak silau
     hl.FillColor = color
-    hl.OutlineColor = Color3.fromRGB(200, 200, 200) -- Abu-abu terang agar tidak se-tebal Putih murni
+    hl.OutlineColor = Color3.fromRGB(255, 255, 255)
     hl.FillTransparency = 0.5
-    hl.OutlineTransparency = 0.6 -- Outline dibuat samar agar lebih jelas melihat objeknya
-    
-    -- Fix Masalah 3: TEMBUS TEMBOK (Always On Top)
-    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    
+    hl.OutlineTransparency = 0.8 -- Outline sangat tipis agar tidak mengganggu
+    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop -- Tetap tembus tembok
     hl.Enabled = true
     return hl
 end
@@ -38,13 +33,20 @@ function ESP:SetPlayer(state)
     self.Config.Player = state
     local function UpdatePlayer(p)
         if p.Character then
-            local color = Color3.fromRGB(255, 255, 255)
-            if p.Team and p.Team.Name == "Killer" then
-                color = self.Colors.Killer
-            elseif p.Team and p.Team.Name == "Survivor" then
-                color = self.Colors.Survivor
+            -- FIX: Default diatur ke Hijau (Survivor) agar tidak jadi Putih jika tim telat terdeteksi
+            local playerColor = self.Colors.Survivor 
+            
+            if p.Team then
+                local teamName = p.Team.Name
+                -- Gunakan deteksi parsial agar lebih akurat
+                if teamName:find("Killer") then
+                    playerColor = self.Colors.Killer
+                elseif teamName:find("Survivor") then
+                    playerColor = self.Colors.Survivor
+                end
             end
-            local hl = ApplyHighlight(p.Character, color)
+            
+            local hl = ApplyHighlight(p.Character, playerColor)
             if hl then hl.Enabled = state end
         end
     end
@@ -56,11 +58,10 @@ function ESP:SetPlayer(state)
     end
 end
 
--- 2. GENERATOR ESP
+-- 2. GENERATOR ESP (ORANYE)
 function ESP:SetGenerator(state)
     self.Config.Generator = state
     for _, obj in pairs(workspace:GetDescendants()) do
-        -- Mencari kata "Generator" baik di nama atau di dalam model
         if obj.Name:find("Generator") then
             local hl = ApplyHighlight(obj, self.Colors.Generator)
             if hl then hl.Enabled = state end
@@ -68,23 +69,24 @@ function ESP:SetGenerator(state)
     end
 end
 
--- 3. PALLET ESP
+-- 3. PALLET ESP (KUNING - KEMBALI KE 1 KEYWORD)
 function ESP:SetPallet(state)
     self.Config.Pallet = state
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj.Name:lower():find("pallet") then
+        -- Hanya scan objek dengan nama "Pallet" agar tidak berat/terlalu banyak
+        if obj.Name == "Pallet" or obj.Name:find("Pallet") then
             local hl = ApplyHighlight(obj, self.Colors.Pallet)
             if hl then hl.Enabled = state end
         end
     end
 end
 
--- 4. GATE ESP - FIX (Kembali ke logika script sebelumnya yang bekerja)
+-- 4. GATE ESP (BIRU - KEMBALI KE KEYWORD BERFUNGSI)
 function ESP:SetGate(state)
     self.Config.Gate = state
     for _, obj in pairs(workspace:GetDescendants()) do
-        -- Kita pakai pencarian yang lebih luas sesuai script awalmu yang sempat work
-        if obj.Name:find("Gate") or obj.Name:find("Exit") or obj.Name == "ExitGate" then
+        -- Gunakan keyword "ExitGate" yang sebelumnya kamu bilang berfungsi
+        if obj.Name:find("ExitGate") or obj.Name:find("Gate") then
             local hl = ApplyHighlight(obj, self.Colors.Gate)
             if hl then hl.Enabled = state end
         end
