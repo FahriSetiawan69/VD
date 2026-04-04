@@ -1,31 +1,28 @@
 -- [[ FahriRoundopHUB OFFICIAL LOADER ]] --
--- Developer: FahriSetiawan69
-
 local BaseURL = "https://raw.githubusercontent.com/FahriSetiawan69/VD/refs/heads/main/"
 local StarterGui = game:GetService("StarterGui")
 
--- 1. Pop-up Hiasan
 StarterGui:SetCore("SendNotification", {
     Title = "FahriRoundopHUB",
     Text = "FahriRoundopHUB Execute",
-    Duration = 5,
-    Icon = "rbxassetid://4483345998"
+    Duration = 5
 })
 
--- 2. Logika Pemanggilan HomeGui
 local function StartHub()
     local target = BaseURL .. "HomeGui.lua"
-    print("[FR-HUB] Mencoba mendownload: " .. target)
-    
     local success, content = pcall(function()
         return game:HttpGet(target)
     end)
 
     if success and content then
-        print("[FR-HUB] HomeGui Terdeteksi! Menjalankan...")
-        loadstring(content)()
+        local func, err = loadstring(content)
+        if func then
+            func()
+        else
+            warn("[FR-HUB] Error compile: " .. tostring(err))
+        end
     else
-        warn("[FR-HUB] 404: File tetap tidak ditemukan di link baru.")
+        warn("[FR-HUB] 404: Gagal download HomeGui.lua")
     end
 end
 
