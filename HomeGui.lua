@@ -1,11 +1,13 @@
--- [[ RiiHUB HOME GUI - Pro Mobile Edition ]] --
+-- [[ FahriRoundopHUB - Home UI ]] --
 local OrionLib = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Orion/refs/heads/main/source'))()
 local BaseURL = "https://raw.githubusercontent.com/FahriSetiawan69/VD/main/"
 
--- 1. FLOATING BUTTON SYSTEM (MINIMIZE)
+-- 1. SISTEM FLOATING BUTTON (MINIMIZE)
 local ScreenGui = Instance.new("ScreenGui")
 local ImageButton = Instance.new("ImageButton")
-ScreenGui.Name = "RiiHUB_MobileToggle"
+local UICorner = Instance.new("UICorner")
+
+ScreenGui.Name = "FR_MobileToggle"
 ScreenGui.Parent = game:GetService("CoreGui")
 ScreenGui.Enabled = false 
 
@@ -17,7 +19,6 @@ ImageButton.Size = UDim2.new(0, 45, 0, 45)
 ImageButton.Image = "rbxassetid://4483345998"
 ImageButton.Draggable = true 
 
-local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 10)
 UICorner.Parent = ImageButton
 
@@ -26,12 +27,12 @@ ImageButton.MouseButton1Click:Connect(function()
     ScreenGui.Enabled = false
 end)
 
--- 2. MAIN WINDOW
+-- 2. KONFIGURASI WINDOW
 local Window = OrionLib:MakeWindow({
-    Name = "RiiHUB | Violence District", 
+    Name = "FahriRoundopHUB | Violence District", 
     HidePremium = false, 
     SaveConfig = true, 
-    ConfigFolder = "RiiHUB_VD",
+    ConfigFolder = "FR_VD",
     IntroText = "FahriRoundopHUB Loading..."
 })
 
@@ -39,7 +40,7 @@ local Window = OrionLib:MakeWindow({
 local VisualTab = Window:MakeTab({ Name = "Visuals", Icon = "rbxassetid://4483345998" })
 
 VisualTab:AddToggle({
-    Name = "Enable Player ESP",
+    Name = "Player ESP (Highlight)",
     Default = false,
     Callback = function(Value)
         _G.ESP_Enabled = Value
@@ -54,7 +55,7 @@ VisualTab:AddToggle({
 local SettingsTab = Window:MakeTab({ Name = "Settings", Icon = "rbxassetid://4483345998" })
 
 SettingsTab:AddButton({
-    Name = "Minimize (Floating Button)",
+    Name = "Minimize to Floating Button",
     Callback = function()
         game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.RightControl, false, game)
         ScreenGui.Enabled = true
