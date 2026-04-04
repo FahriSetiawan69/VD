@@ -1,14 +1,16 @@
+-- [[ FahriRoundopHUB Module: ESP ]] --
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
-local function ApplyESP(player)
+local function CreateESP(player)
     if player ~= LocalPlayer then
-        local function Create(character)
+        local function Apply(character)
             task.wait(0.5)
-            local highlight = character:FindFirstChild("RiiHUB_Highlight") or Instance.new("Highlight")
-            highlight.Name = "RiiHUB_Highlight"
+            local highlight = character:FindFirstChild("FR_ESP") or Instance.new("Highlight")
+            highlight.Name = "FR_ESP"
             highlight.Parent = character
             highlight.FillColor = Color3.fromRGB(255, 0, 0)
+            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
             
             task.spawn(function()
                 while character:IsDescendantOf(game) do
@@ -17,11 +19,10 @@ local function ApplyESP(player)
                 end
             end)
         end
-        if player.Character then Create(player.Character) end
-        player.CharacterAdded:Connect(Create)
+        if player.Character then Apply(player.Character) end
+        player.CharacterAdded:Connect(Apply)
     end
 end
 
-for _, v in pairs(Players:GetPlayers()) do ApplyESP(v) end
-Players.PlayerAdded:Connect(ApplyESP)
-
+for _, p in pairs(Players:GetPlayers()) do CreateESP(p) end
+Players.PlayerAdded:Connect(CreateESP)
