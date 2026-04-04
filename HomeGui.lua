@@ -1,32 +1,32 @@
 -- [[ RiiHUB HOME GUI - Pro Mobile Edition ]] --
--- Developer: FahriSetiawan69
-
-local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+local OrionLib = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Orion/refs/heads/main/source'))()
 local BaseURL = "https://raw.githubusercontent.com/FahriSetiawan69/VD/main/"
 
--- 1. PENGATURAN FLOATING BUTTON (MINIMIZE)
+-- 1. FLOATING BUTTON SYSTEM (MINIMIZE)
 local ScreenGui = Instance.new("ScreenGui")
 local ImageButton = Instance.new("ImageButton")
-
 ScreenGui.Name = "RiiHUB_MobileToggle"
 ScreenGui.Parent = game:GetService("CoreGui")
-ScreenGui.Enabled = false -- Sembunyi di awal
+ScreenGui.Enabled = false 
 
 ImageButton.Parent = ScreenGui
-ImageButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-ImageButton.BackgroundTransparency = 1
-ImageButton.Position = UDim2.new(0.1, 0, 0.1, 0) -- Posisi awal di layar
-ImageButton.Size = UDim2.new(0, 50, 0, 50)
-ImageButton.Image = "rbxassetid://4483345998" -- Ganti ID ini jika punya logo sendiri
-ImageButton.Draggable = true -- Agar bisa digeser-geser di layar HP
+ImageButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+ImageButton.BackgroundTransparency = 0.2
+ImageButton.Position = UDim2.new(0.1, 0, 0.1, 0)
+ImageButton.Size = UDim2.new(0, 45, 0, 45)
+ImageButton.Image = "rbxassetid://4483345998"
+ImageButton.Draggable = true 
 
--- Fungsi saat Floating Button diklik (Restore)
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.Parent = ImageButton
+
 ImageButton.MouseButton1Click:Connect(function()
     game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.RightControl, false, game)
     ScreenGui.Enabled = false
 end)
 
--- 2. MEMBUAT WINDOW UTAMA
+-- 2. MAIN WINDOW
 local Window = OrionLib:MakeWindow({
     Name = "RiiHUB | Violence District", 
     HidePremium = false, 
@@ -36,10 +36,7 @@ local Window = OrionLib:MakeWindow({
 })
 
 -- TAB VISUALS
-local VisualTab = Window:MakeTab({
-    Name = "Visuals",
-    Icon = "rbxassetid://4483345998"
-})
+local VisualTab = Window:MakeTab({ Name = "Visuals", Icon = "rbxassetid://4483345998" })
 
 VisualTab:AddToggle({
     Name = "Enable Player ESP",
@@ -53,39 +50,25 @@ VisualTab:AddToggle({
     end    
 })
 
--- TAB SETTINGS (Tempat Minimize & Close)
-local SettingsTab = Window:MakeTab({
-    Name = "Settings",
-    Icon = "rbxassetid://4483345998"
-})
+-- TAB SETTINGS
+local SettingsTab = Window:MakeTab({ Name = "Settings", Icon = "rbxassetid://4483345998" })
 
 SettingsTab:AddButton({
-    Name = "Minimize to Floating Button",
+    Name = "Minimize (Floating Button)",
     Callback = function()
-        -- Menutup UI Orion sementara
         game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.RightControl, false, game)
-        -- Munculkan tombol melayang
         ScreenGui.Enabled = true
-        
-        OrionLib:MakeNotification({
-            Name = "Minimized",
-            Content = "Klik tombol melayang untuk membuka kembali.",
-            Time = 3
-        })
     end
 })
 
 SettingsTab:AddButton({
-    Name = "Close Script (Total)",
+    Name = "Close Script Total",
     Callback = function()
-        OrionLib:Destroy() -- Menghapus total UI Orion
-        ScreenGui:Destroy() -- Menghapus total Floating Button
+        OrionLib:Destroy()
+        ScreenGui:Destroy()
         _G.ESP_Enabled = false
         _G.ESP_Loaded = nil
-        
-        print("[RiiHUB] Script Closed Successfully.")
     end
 })
 
 OrionLib:Init()
-
