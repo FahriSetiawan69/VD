@@ -1,16 +1,15 @@
 -- [[ FahriRoundopHUB - Home UI ]] --
+-- Menggunakan mirror Orion yang lebih stabil untuk Mobile
 local OrionLib = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Orion/refs/heads/main/source'))()
-local BaseURL = "https://raw.githubusercontent.com/FahriSetiawan69/VD/main/"
+local BaseURL = "https://raw.githubusercontent.com/FahriSetiawan69/VD/refs/heads/main/"
 
 -- 1. SISTEM FLOATING BUTTON (MINIMIZE)
 local ScreenGui = Instance.new("ScreenGui")
 local ImageButton = Instance.new("ImageButton")
 local UICorner = Instance.new("UICorner")
-
 ScreenGui.Name = "FR_MobileToggle"
 ScreenGui.Parent = game:GetService("CoreGui")
 ScreenGui.Enabled = false 
-
 ImageButton.Parent = ScreenGui
 ImageButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 ImageButton.BackgroundTransparency = 0.2
@@ -18,10 +17,8 @@ ImageButton.Position = UDim2.new(0.1, 0, 0.1, 0)
 ImageButton.Size = UDim2.new(0, 45, 0, 45)
 ImageButton.Image = "rbxassetid://4483345998"
 ImageButton.Draggable = true 
-
 UICorner.CornerRadius = UDim.new(0, 10)
 UICorner.Parent = ImageButton
-
 ImageButton.MouseButton1Click:Connect(function()
     game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.RightControl, false, game)
     ScreenGui.Enabled = false
@@ -46,6 +43,7 @@ VisualTab:AddToggle({
         _G.ESP_Enabled = Value
         if _G.ESP_Loaded == nil then
             _G.ESP_Loaded = true
+            -- Load ESP menggunakan link Raw yang sama
             loadstring(game:HttpGet(BaseURL .. "Features/ESP.lua"))()
         end
     end    
@@ -53,7 +51,6 @@ VisualTab:AddToggle({
 
 -- TAB SETTINGS
 local SettingsTab = Window:MakeTab({ Name = "Settings", Icon = "rbxassetid://4483345998" })
-
 SettingsTab:AddButton({
     Name = "Minimize to Floating Button",
     Callback = function()
@@ -61,7 +58,6 @@ SettingsTab:AddButton({
         ScreenGui.Enabled = true
     end
 })
-
 SettingsTab:AddButton({
     Name = "Close Script Total",
     Callback = function()
