@@ -1,17 +1,17 @@
--- [[ RiiHUB OFFICIAL LOADER - FIXED ]] --
+-- [[ FahriRoundopHUB OFFICIAL LOADER ]] --
 local BaseURL = "https://raw.githubusercontent.com/FahriSetiawan69/VD/main/"
 local StarterGui = game:GetService("StarterGui")
 
--- 1. Pop-up Hiasan
+-- 1. Pop-up Hiasan Sesuai Request
 StarterGui:SetCore("SendNotification", {
-    Title = "System Run",
+    Title = "FahriRoundopHUB",
     Text = "FahriRoundopHUB Execute",
     Duration = 5,
     Icon = "rbxassetid://4483345998"
 })
 
--- 2. Logika Loading
-local function StartRiiHUB()
+-- 2. Logika Pemanggilan HomeGui
+local function StartHub()
     local success, content = pcall(function()
         return game:HttpGet(BaseURL .. "HomeGui.lua")
     end)
@@ -19,8 +19,8 @@ local function StartRiiHUB()
     if success and content then
         loadstring(content)()
     else
-        warn("[RiiHUB] Gagal mengambil HomeGui.lua! Cek link GitHub kamu.")
+        warn("[FahriRoundopHUB] 404: Gagal mengambil HomeGui.lua. Cek link GitHub!")
     end
 end
 
-task.spawn(StartRiiHUB)
+task.spawn(StartHub)
