@@ -1,4 +1,4 @@
--- [[ FahriRoundopHUB - ESP Engine (Refined Fix) ]] --
+-- [[ FahriRoundopHUB - ESP Engine (Precision Fix) ]] --
 -- Developer: FahriSetiawan69
 
 local ESP = {
@@ -22,8 +22,8 @@ local function ApplyHighlight(obj, color)
     hl.FillColor = color
     hl.OutlineColor = Color3.fromRGB(255, 255, 255)
     hl.FillTransparency = 0.5
-    hl.OutlineTransparency = 0.8 -- Outline sangat tipis agar tidak mengganggu
-    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop -- Tetap tembus tembok
+    hl.OutlineTransparency = 0.8 
+    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop -- Tembus Tembok
     hl.Enabled = true
     return hl
 end
@@ -33,12 +33,11 @@ function ESP:SetPlayer(state)
     self.Config.Player = state
     local function UpdatePlayer(p)
         if p.Character then
-            -- FIX: Default diatur ke Hijau (Survivor) agar tidak jadi Putih jika tim telat terdeteksi
+            -- Default Hijau (Survivor)
             local playerColor = self.Colors.Survivor 
             
             if p.Team then
                 local teamName = p.Team.Name
-                -- Gunakan deteksi parsial agar lebih akurat
                 if teamName:find("Killer") then
                     playerColor = self.Colors.Killer
                 elseif teamName:find("Survivor") then
@@ -58,7 +57,7 @@ function ESP:SetPlayer(state)
     end
 end
 
--- 2. GENERATOR ESP (ORANYE)
+-- 2. GENERATOR ESP
 function ESP:SetGenerator(state)
     self.Config.Generator = state
     for _, obj in pairs(workspace:GetDescendants()) do
@@ -69,24 +68,23 @@ function ESP:SetGenerator(state)
     end
 end
 
--- 3. PALLET ESP (KUNING - KEMBALI KE 1 KEYWORD)
+-- 3. PALLET ESP (Hanya 1 Keyword Sesuai Request)
 function ESP:SetPallet(state)
     self.Config.Pallet = state
     for _, obj in pairs(workspace:GetDescendants()) do
-        -- Hanya scan objek dengan nama "Pallet" agar tidak berat/terlalu banyak
-        if obj.Name == "Pallet" or obj.Name:find("Pallet") then
+        if obj.Name == "Pallet" then
             local hl = ApplyHighlight(obj, self.Colors.Pallet)
             if hl then hl.Enabled = state end
         end
     end
 end
 
--- 4. GATE ESP (BIRU - KEMBALI KE KEYWORD BERFUNGSI)
+-- 4. GATE ESP (FIX: Berdasarkan Hasil Scan Scanner Tool)
 function ESP:SetGate(state)
     self.Config.Gate = state
     for _, obj in pairs(workspace:GetDescendants()) do
-        -- Gunakan keyword "ExitGate" yang sebelumnya kamu bilang berfungsi
-        if obj.Name:find("ExitGate") or obj.Name:find("Gate") then
+        -- Berdasarkan scan: Nama objek utama adalah "Gate"
+        if obj.Name == "Gate" then
             local hl = ApplyHighlight(obj, self.Colors.Gate)
             if hl then hl.Enabled = state end
         end
