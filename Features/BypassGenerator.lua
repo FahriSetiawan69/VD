@@ -1,18 +1,23 @@
--- [[ FahriRoundopHUB - Bypass Generator V7.6 (Revive Fix) ]] --
--- Fix: Fitur otomatis aktif kembali setelah di-revive
+-- [[ FahriRoundopHUB - Bypass Generator V7.6 (Initial Start Fix) ]] --
+-- Perbaikan: Pengecekan Sit, Remote Wait, dan Debug Console
 
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+-- Pastikan Remote sudah ada sebelum script lanjut (Mencegah error start-up)
+local RemotesFolder = ReplicatedStorage:WaitForChild("Remotes", 10)
+local GenFolder = RemotesFolder and RemotesFolder:WaitForChild("Generator", 10)
+local RepairRemote = GenFolder and GenFolder:WaitForChild("RepairEvent", 10)
+
 local Survivor = {
     Active = false,
     IsStopping = false,
     LastTarget = nil,
-    RepairRemote = ReplicatedStorage.Remotes.Generator.RepairEvent
+    RepairRemote = RepairRemote
 }
 
--- [[ FUNGSI AMBIL KARAKTER TERBARU (SANGAT PENTING) ]] --
+-- [[ FUNGSI AMBIL DATA KARAKTER ]] --
 local function GetCurrentData()
     local char = Player.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
@@ -20,7 +25,7 @@ local function GetCurrentData()
     return char, hum, root
 end
 
--- [[ FUNGSI SAFETY CHECK ]] --
+-- [[ FUNGSI SAFETY CHECK (DIPERBAIKI) ]] --
 local function IsPlayerSafe()
     local Char, Hum, Root = GetCurrentData()
     if not Char or not Hum or not Root then return false end
@@ -28,14 +33,14 @@ local function IsPlayerSafe()
     -- 1. Cek folder Ragdoll (Tanda Knock/Gendong)
     if Char:FindFirstChild("RagdollConstraints") then return false end
     
-    -- 2. Cek Animasi Knocked
+    -- 2. Cek Animasi Knocked (Berdasarkan hasil scan kamu)
     local tracks = Hum:GetPlayingAnimationTracks()
     for _, track in pairs(tracks) do
         if string.find(string.lower(track.Name), "knocked") then return false end
     end
     
-    -- 3. Cek Kondisi Fisik
-    if Hum.Health <= 0 or Hum.PlatformStand or Hum.Sit then return false end
+    -- CATATAN: Hum.Sit dihapus karena biasanya repair dianggap 'duduk' oleh sistem game
+    if Hum.Health <= 0 or Hum.PlatformStand then return false end
     
     return true
 end
@@ -61,36 +66,44 @@ local function getBestInteractionPoint()
 end
 
 -- [[ METATABLE HOOK ]] --
-local oldNamecall
-oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-    local method = getnamecallmethod()
-    local args = {...}
-    if Survivor.Active and method == "FireServer" and self == Survivor.RepairRemote then
-        if not Survivor.IsStopping and IsPlayerSafe() then
-            if args[2] == false then
-                args[2] = true
-                return oldNamecall(self, unpack(args))
+if Survivor.RepairRemote then
+    local oldNamecall
+    oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+        local method = getnamecallmethod()
+        local args = {...}
+        if Survivor.Active and method == "FireServer" and self == Survivor.RepairRemote then
+            if not Survivor.IsStopping and IsPlayerSafe() then
+                if args[2] == false then
+                    args[2] = true
+                    return oldNamecall(self, unpack(args))
+                end
             end
         end
-    end
-    return oldNamecall(self, ...)
-end)
+        return oldNamecall(self, ...)
+    end)
+else
+    warn("[FahriRoundopHUB] ERROR: RepairEvent tidak ditemukan di ReplicatedStorage!")
+end
 
--- [[ LOOP UTAMA: DENGAN AUTO-REFRESH ]] --
+-- [[ LOOP UTAMA ]] --
 task.spawn(function()
+    print("[FahriRoundopHUB] Survivor Loop Started")
     while true do
-        task.wait(0.3)
+        task.wait(0.5)
         if Survivor.Active then
             local Char, Hum, Root = GetCurrentData()
             
-            -- Jika Player Bangkit & Aman
             if Hum and Root and IsPlayerSafe() then
                 local currentTarget = getBestInteractionPoint()
                 
                 if Hum.MoveDirection.Magnitude == 0 then
-                    if currentTarget and not Survivor.LastTarget then
-                        Survivor.LastTarget = currentTarget
-                        Survivor.RepairRemote:FireServer(currentTarget, true)
+                    if currentTarget then
+                        if not Survivor.LastTarget then
+                            -- DEBUG: Biar kamu tahu di console kalau dia mencoba menempel
+                            print("[FahriRoundopHUB] Attempting Auto-Attach to: " .. currentTarget.Name)
+                            Survivor.LastTarget = currentTarget
+                            Survivor.RepairRemote:FireServer(currentTarget, true)
+                        end
                     end
                 elseif Hum.MoveDirection.Magnitude > 0 then
                     if Survivor.LastTarget then
@@ -103,15 +116,8 @@ task.spawn(function()
                     end
                 end
             else
-                -- JIKA LAGI KNOCK/GENDONG: Paksa Lepas & Reset Target
-                -- Ini kunci agar setelah revive, LastTarget sudah bersih (nil)
+                -- Reset jika terdeteksi tidak aman
                 if Survivor.LastTarget then
-                    pcall(function()
-                        Survivor.IsStopping = true
-                        Survivor.RepairRemote:FireServer(Survivor.LastTarget, false)
-                        task.wait(0.1)
-                        Survivor.IsStopping = false
-                    end)
                     Survivor.LastTarget = nil
                 end
             end
@@ -119,18 +125,9 @@ task.spawn(function()
     end
 end)
 
--- Reset total saat karakter benar-benar respawn/refresh
-Player.CharacterAdded:Connect(function()
-    Survivor.LastTarget = nil
-    Survivor.IsStopping = false
-end)
-
 function Survivor:Toggle(state)
     self.Active = state
-    if not state then
-        Survivor.IsStopping = false
-        Survivor.LastTarget = nil
-    end
+    print("[FahriRoundopHUB] Bypass Generator Active: " .. tostring(state))
 end
 
 _G.FahriSurvivor = Survivor
