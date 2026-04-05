@@ -1,26 +1,32 @@
--- [[ FahriRoundopHUB - Bypass Generator (Aggressive Version) ]] --
--- Deskripsi: Reverted to stable logic. No safety checks, pure performance.
+-- [[ FahriRoundopHUB - Bypass Generator V7.6 (Fixed Attachment & Detach) ]] --
+-- Fix: Auto-attach jarak jauh & Instant Analog Detach
 
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- Mencari Remote secara langsung
+-- 1. SETUP REMOTE & VARIABLES
 local RepairRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Generator"):WaitForChild("RepairEvent")
 
 local Survivor = {
     Active = false,
-    RepairRemote = RepairRemote
+    InternalStop = false, -- Flag rahasia agar sinyal 'Stop' tidak dicegat Hook
+    LastTarget = nil
 }
 
--- [[ 1. METATABLE HOOK: BYPASS SKILL CHECK ]] --
+-- [[ 2. METATABLE HOOK: SMART BYPASS ]] --
 local oldNamecall
 oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
     local method = getnamecallmethod()
     local args = {...}
 
-    if Survivor.Active and method == "FireServer" and self == Survivor.RepairRemote then
-        -- Bypass: Paksa Gagal (false) jadi Berhasil (true)
+    if Survivor.Active and method == "FireServer" and self == RepairRemote then
+        -- Jika kita sedang sengaja mengirim sinyal STOP, jangan dirubah!
+        if Survivor.InternalStop then
+            return oldNamecall(self, unpack(args))
+        end
+
+        -- Bypass: Ubah Gagal (false) jadi Berhasil (true)
         if args[2] == false then
             args[2] = true
             return oldNamecall(self, unpack(args))
@@ -29,10 +35,10 @@ oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
     return oldNamecall(self, ...)
 end)
 
--- [[ 2. AUTO-ATTACH LOOP ]] --
+-- [[ 3. AUTO-ATTACH & DETACH LOOP ]] --
 task.spawn(function()
     while true do
-        task.wait(0.5) -- Delay santai agar tidak lag
+        task.wait(0.3) -- Lebih cepat agar respon analog makin tajam
         
         if Survivor.Active then
             local Char = Player.Character
@@ -40,28 +46,42 @@ task.spawn(function()
             local Hum = Char and Char:FindFirstChildOfClass("Humanoid")
             
             if Root and Hum then
-                -- Cari GeneratorPoint terdekat
-                local target = nil
-                local dist = 12
+                -- SCAN TARGET (Jarak dinaikkan ke 15 agar lebih sensitif)
+                local currentTarget = nil
+                local maxDist = 15
                 
                 for _, obj in pairs(workspace:GetDescendants()) do
                     if obj.Name:find("GeneratorPoint") then
-                        local magnitude = (Root.Position - obj.Position).Magnitude
-                        if magnitude < dist then
-                            dist = magnitude
-                            target = obj
+                        local d = (Root.Position - obj.Position).Magnitude
+                        if d < maxDist then
+                            maxDist = d
+                            currentTarget = obj
                         end
                     end
                 end
 
-                -- Logika Nempel & Lepas
+                -- LOGIKA 1: JIKA DIAM (AUTO ATTACH)
                 if Hum.MoveDirection.Magnitude == 0 then
-                    if target then 
-                        Survivor.RepairRemote:FireServer(target, true) 
+                    if currentTarget and not Survivor.LastTarget then
+                        Survivor.LastTarget = currentTarget
+                        RepairRemote:FireServer(currentTarget, true)
+                        print("[FR-HUB] Auto Attached!")
                     end
-                else
-                    if target then 
-                        Survivor.RepairRemote:FireServer(target, false) 
+                
+                -- LOGIKA 2: JIKA GERAK (INSTANT DETACH)
+                elseif Hum.MoveDirection.Magnitude > 0 then
+                    if Survivor.LastTarget then
+                        -- Aktifkan rem darurat agar sinyal 'false' tidak diubah Hook
+                        Survivor.InternalStop = true 
+                        RepairRemote:FireServer(Survivor.LastTarget, false)
+                        
+                        task.wait(0.1) -- Jeda mikro agar sinyal terkirim
+                        Survivor.InternalStop = false
+                        Survivor.LastTarget = nil
+                        print("[FR-HUB] Detached via Movement")
+                        
+                        -- Cooldown lari agar tidak langsung kesedot balik
+                        task.wait(0.5)
                     end
                 end
             end
@@ -71,7 +91,8 @@ end)
 
 function Survivor:Toggle(state)
     self.Active = state
-    print("[FahriRoundopHUB] Bypass Generator: " .. tostring(state))
+    Survivor.LastTarget = nil
+    Survivor.InternalStop = false
 end
 
 _G.FahriSurvivor = Survivor
