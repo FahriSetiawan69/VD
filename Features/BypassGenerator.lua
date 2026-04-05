@@ -1,5 +1,5 @@
--- [[ FahriRoundopHUB - Bypass Generator V7.6 (Fixed & Optimized) ]] --
--- Fix: Manual Repair, Auto-Attach, and Anti-Stuck Logic
+-- [[ FahriRoundopHUB - Bypass Generator V7.6 (Validated Safety) ]] --
+-- Research Data: RagdollConstraints & Knocked Animations
 
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
@@ -7,19 +7,45 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Survivor = {
     Active = false,
-    IsStopping = false, -- Flag khusus agar tidak stuck saat lari
+    IsStopping = false,
     LastTarget = nil,
     RepairRemote = ReplicatedStorage.Remotes.Generator.RepairEvent
 }
 
--- [[ 1. SMART SCANNER: DETEKSI TITIK TERDEKAT ]] --
+-- [[ FUNGSI SAFETY CHECK BERDASARKAN HASIL SCAN ]] --
+local function IsPlayerSafe()
+    local Char = Player.Character
+    local Hum = Char and Char:FindFirstChildOfClass("Humanoid")
+    if not Char or not Hum then return false end
+    
+    -- 1. Cek folder RagdollConstraints (Hasil Scan 1 & 2)
+    if Char:FindFirstChild("RagdollConstraints") then 
+        return false 
+    end
+    
+    -- 2. Cek Animasi dengan keyword 'knocked' (Hasil Scan: idleknocked & walkknocked)
+    local tracks = Hum:GetPlayingAnimationTracks()
+    for _, track in pairs(tracks) do
+        if string.find(string.lower(track.Name), "knocked") then
+            return false
+        end
+    end
+    
+    -- 3. Cek Status Dasar
+    if Hum.Health <= 0 or Hum.Sit or Hum.PlatformStand then 
+        return false 
+    end
+    
+    return true
+end
+
+-- [[ SCANNER TITIK TERDEKAT ]] --
 local function getBestInteractionPoint()
     local Character = Player.Character
     if not Character or not Character:FindFirstChild("HumanoidRootPart") then return nil end
-    
     local Root = Character.HumanoidRootPart
     local closestPoint = nil
-    local maxDistance = 15 -- Jangkauan ditingkatkan agar auto-attach lebih peka
+    local maxDistance = 15 
     
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") and string.find(obj.Name, "GeneratorPoint") then
@@ -33,17 +59,14 @@ local function getBestInteractionPoint()
     return closestPoint
 end
 
--- [[ 2. METATABLE HOOK: BYPASS DENGAN FILTER SAFETY ]] --
+-- [[ METATABLE HOOK ]] --
 local oldNamecall
 oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
     local method = getnamecallmethod()
     local args = {...}
-
-    -- Cek apakah fitur ON dan Remote-nya benar
     if Survivor.Active and method == "FireServer" and self == Survivor.RepairRemote then
-        -- JANGAN BYPASS jika kita sedang sengaja mengirim sinyal STOP (IsStopping)
-        if not Survivor.IsStopping then
-            -- Jika sinyal adalah 'false' (gagal skill check), ubah jadi 'true' (berhasil)
+        -- Bypass mati jika player terdeteksi Knock atau Digendong
+        if not Survivor.IsStopping and IsPlayerSafe() then
             if args[2] == false then
                 args[2] = true
                 return oldNamecall(self, unpack(args))
@@ -53,55 +76,53 @@ oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
     return oldNamecall(self, ...)
 end)
 
--- [[ 3. AUTO-ATTACH & CANCEL LOOP ]] --
+-- [[ AUTO-ATTACH LOOP ]] --
 task.spawn(function()
     while true do
-        task.wait(0.3) -- Delay optimal agar tidak bentrok dengan manual repair
-        
+        task.wait(0.3)
         if Survivor.Active then
             local Character = Player.Character
             local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
             
-            if Humanoid then
+            -- Jika kondisi Aman (Tidak Knock/Gendong)
+            if Humanoid and IsPlayerSafe() then
                 local currentTarget = getBestInteractionPoint()
                 
-                -- LOGIKA: JIKA DIAM (ANTARA AUTO ATAU MANUAL)
                 if Humanoid.MoveDirection.Magnitude == 0 then
                     if currentTarget and not Survivor.LastTarget then
-                        -- Hanya auto-attach jika kita belum menempel di mana pun
                         Survivor.LastTarget = currentTarget
                         Survivor.RepairRemote:FireServer(currentTarget, true)
                     end
-                
-                -- LOGIKA: JIKA BERGERAK (STOP TOTAL)
                 elseif Humanoid.MoveDirection.Magnitude > 0 then
                     if Survivor.LastTarget then
-                        -- AKTIFKAN MODE SAFETY: Beritahu Hook untuk tidak merubah sinyal ini
                         Survivor.IsStopping = true 
                         Survivor.RepairRemote:FireServer(Survivor.LastTarget, false)
-                        
-                        task.wait(0.1) -- Jeda singkat agar sinyal terkirim
+                        task.wait(0.1)
                         Survivor.IsStopping = false
                         Survivor.LastTarget = nil
-                        
-                        -- Beri cooldown agar tidak langsung narik balik saat lari
                         task.wait(0.5)
                     end
+                end
+            else
+                -- JIKA TERDETEKSI KNOCK/GENDONG: Langsung putus koneksi repair
+                if Survivor.LastTarget then
+                    Survivor.IsStopping = true
+                    Survivor.RepairRemote:FireServer(Survivor.LastTarget, false)
+                    task.wait(0.1)
+                    Survivor.IsStopping = false
+                    Survivor.LastTarget = nil
                 end
             end
         end
     end
 end)
 
--- Fungsi Control untuk UI
 function Survivor:Toggle(state)
     self.Active = state
     if not state then
-        -- Jika dimatikan, pastikan semua flag reset
         Survivor.IsStopping = false
         Survivor.LastTarget = nil
     end
-    print("[FahriRoundopHUB] Bypass Generator: " .. (state and "ON" or "OFF"))
 end
 
 _G.FahriSurvivor = Survivor
