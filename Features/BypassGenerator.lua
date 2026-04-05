@@ -1,5 +1,5 @@
--- [[ FahriRoundopHUB - Bypass Generator V7.6 (Validated Safety) ]] --
--- Research Data: RagdollConstraints & Knocked Animations
+-- [[ FahriRoundopHUB - Bypass Generator V7.6 (Revive Fix) ]] --
+-- Fix: Fitur otomatis aktif kembali setelah di-revive
 
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
@@ -12,38 +12,39 @@ local Survivor = {
     RepairRemote = ReplicatedStorage.Remotes.Generator.RepairEvent
 }
 
--- [[ FUNGSI SAFETY CHECK BERDASARKAN HASIL SCAN ]] --
+-- [[ FUNGSI AMBIL KARAKTER TERBARU (SANGAT PENTING) ]] --
+local function GetCurrentData()
+    local char = Player.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    return char, hum, root
+end
+
+-- [[ FUNGSI SAFETY CHECK ]] --
 local function IsPlayerSafe()
-    local Char = Player.Character
-    local Hum = Char and Char:FindFirstChildOfClass("Humanoid")
-    if not Char or not Hum then return false end
+    local Char, Hum, Root = GetCurrentData()
+    if not Char or not Hum or not Root then return false end
     
-    -- 1. Cek folder RagdollConstraints (Hasil Scan 1 & 2)
-    if Char:FindFirstChild("RagdollConstraints") then 
-        return false 
-    end
+    -- 1. Cek folder Ragdoll (Tanda Knock/Gendong)
+    if Char:FindFirstChild("RagdollConstraints") then return false end
     
-    -- 2. Cek Animasi dengan keyword 'knocked' (Hasil Scan: idleknocked & walkknocked)
+    -- 2. Cek Animasi Knocked
     local tracks = Hum:GetPlayingAnimationTracks()
     for _, track in pairs(tracks) do
-        if string.find(string.lower(track.Name), "knocked") then
-            return false
-        end
+        if string.find(string.lower(track.Name), "knocked") then return false end
     end
     
-    -- 3. Cek Status Dasar
-    if Hum.Health <= 0 or Hum.Sit or Hum.PlatformStand then 
-        return false 
-    end
+    -- 3. Cek Kondisi Fisik
+    if Hum.Health <= 0 or Hum.PlatformStand or Hum.Sit then return false end
     
     return true
 end
 
 -- [[ SCANNER TITIK TERDEKAT ]] --
 local function getBestInteractionPoint()
-    local Character = Player.Character
-    if not Character or not Character:FindFirstChild("HumanoidRootPart") then return nil end
-    local Root = Character.HumanoidRootPart
+    local Char, Hum, Root = GetCurrentData()
+    if not Root then return nil end
+    
     local closestPoint = nil
     local maxDistance = 15 
     
@@ -65,7 +66,6 @@ oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
     local method = getnamecallmethod()
     local args = {...}
     if Survivor.Active and method == "FireServer" and self == Survivor.RepairRemote then
-        -- Bypass mati jika player terdeteksi Knock atau Digendong
         if not Survivor.IsStopping and IsPlayerSafe() then
             if args[2] == false then
                 args[2] = true
@@ -76,24 +76,23 @@ oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
     return oldNamecall(self, ...)
 end)
 
--- [[ AUTO-ATTACH LOOP ]] --
+-- [[ LOOP UTAMA: DENGAN AUTO-REFRESH ]] --
 task.spawn(function()
     while true do
         task.wait(0.3)
         if Survivor.Active then
-            local Character = Player.Character
-            local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
+            local Char, Hum, Root = GetCurrentData()
             
-            -- Jika kondisi Aman (Tidak Knock/Gendong)
-            if Humanoid and IsPlayerSafe() then
+            -- Jika Player Bangkit & Aman
+            if Hum and Root and IsPlayerSafe() then
                 local currentTarget = getBestInteractionPoint()
                 
-                if Humanoid.MoveDirection.Magnitude == 0 then
+                if Hum.MoveDirection.Magnitude == 0 then
                     if currentTarget and not Survivor.LastTarget then
                         Survivor.LastTarget = currentTarget
                         Survivor.RepairRemote:FireServer(currentTarget, true)
                     end
-                elseif Humanoid.MoveDirection.Magnitude > 0 then
+                elseif Hum.MoveDirection.Magnitude > 0 then
                     if Survivor.LastTarget then
                         Survivor.IsStopping = true 
                         Survivor.RepairRemote:FireServer(Survivor.LastTarget, false)
@@ -104,17 +103,26 @@ task.spawn(function()
                     end
                 end
             else
-                -- JIKA TERDETEKSI KNOCK/GENDONG: Langsung putus koneksi repair
+                -- JIKA LAGI KNOCK/GENDONG: Paksa Lepas & Reset Target
+                -- Ini kunci agar setelah revive, LastTarget sudah bersih (nil)
                 if Survivor.LastTarget then
-                    Survivor.IsStopping = true
-                    Survivor.RepairRemote:FireServer(Survivor.LastTarget, false)
-                    task.wait(0.1)
-                    Survivor.IsStopping = false
+                    pcall(function()
+                        Survivor.IsStopping = true
+                        Survivor.RepairRemote:FireServer(Survivor.LastTarget, false)
+                        task.wait(0.1)
+                        Survivor.IsStopping = false
+                    end)
                     Survivor.LastTarget = nil
                 end
             end
         end
     end
+end)
+
+-- Reset total saat karakter benar-benar respawn/refresh
+Player.CharacterAdded:Connect(function()
+    Survivor.LastTarget = nil
+    Survivor.IsStopping = false
 end)
 
 function Survivor:Toggle(state)
